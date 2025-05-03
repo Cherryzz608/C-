@@ -1,0 +1,140 @@
+QT       += core gui
+
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+
+CONFIG += c++17
+
+# You can make your code fail to compile if it uses deprecated APIs.
+# In order to do so, uncomment the following line.
+#DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
+
+SOURCES += \
+    jett.cpp \
+    main.cpp \
+    mainwindow.cpp
+
+HEADERS += \
+    mainwindow.h
+
+FORMS += \
+    mainwindow.ui
+
+# Default rules for deployment.
+qnx: target.path = /tmp/$${TARGET}/bin
+else: unix:!android: target.path = /opt/$${TARGET}/bin
+!isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+    resources.qrc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// main.cpp
+#include <QApplication>
+#include "mainwindow.h"
+
+int main(int argc, char *argv[]) {
+    QApplication a(argc, argv);
+    MainWindow w;
+    w.show();
+    return a.exec();
+}
+// mainwindow.h
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
+
+#include <QMainWindow>
+#include <QTimer>
+
+class MainWindow : public QMainWindow {
+    Q_OBJECT
+
+public:
+    MainWindow(QWidget *parent = nullptr);
+    ~MainWindow();
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+
+private:
+    QTimer *timer;
+    double angle;      // 绳子的当前角度
+    int length;        // 绳子的长度
+    int direction;     // 方向（1顺时针，-1逆时针）
+    bool isCatching;   // 是否正在抓取
+
+private slots:
+    void updateFrame();
+};
+
+#endif // MAINWINDOW_H
+// mainwindow.cpp
+#include "mainwindow.h"
+#include <QPainter>
+#include <QMouseEvent>
+#include <QtMath>
+
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent), angle(0), length(100), direction(1), isCatching(false) {
+    resize(800, 600);
+
+    timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, this, &MainWindow::updateFrame);
+    timer->start(20); // 每20ms刷新一次
+}
+
+MainWindow::~MainWindow() {}
+
+void MainWindow::paintEvent(QPaintEvent *) {
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    // 绘制背景
+    painter.fillRect(rect(), Qt::white);
+
+    // 绘制绳子
+    painter.translate(width() / 2, 0); // 将原点移动到顶部中心
+    painter.rotate(angle);
+
+    painter.setPen(QPen(Qt::black, 2));
+    painter.drawLine(0, 0, 0, length);
+
+    // 绘制钩子
+    painter.setBrush(Qt::yellow);
+    painter.drawEllipse(QPoint(0, length), 10, 10);
+}
+
+void MainWindow::mousePressEvent(QMouseEvent *event) {
+    if (!isCatching) {
+        isCatching = true;
+    }
+}
+
+void MainWindow::updateFrame() {
+    if (!isCatching) {
+        // 摇摆
+        angle += direction * 1;
+        if (angle > 60) direction = -1;
+        if (angle < -60) direction = 1;
+    } else {
+        // 抓取伸长
+        length += 10;
+        if (length > 500) {
+            isCatching = false;
+            length = 100; // 复位
+        }
+    }
+    update();
+}
